@@ -63,7 +63,7 @@ import (
 %left '>' '<' TGte TLte TEqeq TNeq
 %right T2Comma
 %left '+' '-'
-%left '*' '/' '%'
+%left '*' '/' '|' '%'
 %right UNARY /* not # -(unary) */
 %right '^'
 
@@ -364,6 +364,10 @@ expr:
         } |
         expr '/' expr {
             $$ = &ast.ArithmeticOpExpr{Lhs: $1, Operator: "/", Rhs: $3}
+            $$.SetLine($1.Line())
+        } |
+        expr '|' expr {
+            $$ = &ast.ArithmeticOpExpr{Lhs: $1, Operator: "|", Rhs: $3}
             $$.SetLine($1.Line())
         } |
         expr '%' expr {

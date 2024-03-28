@@ -12,9 +12,11 @@ import (
 	"github.com/yuin/gopher-lua/ast"
 )
 
-const EOF = -1
-const whitespace1 = 1<<'\t' | 1<<' '
-const whitespace2 = 1<<'\t' | 1<<'\n' | 1<<'\r' | 1<<' '
+const (
+	EOF         = -1
+	whitespace1 = 1<<'\t' | 1<<' '
+	whitespace2 = 1<<'\t' | 1<<'\n' | 1<<'\r' | 1<<' '
+)
 
 type Error struct {
 	Pos     ast.Position
@@ -61,7 +63,12 @@ func NewScanner(reader io.Reader, source string) *Scanner {
 
 func (sc *Scanner) Error(tok string, msg string) *Error { return &Error{sc.Pos, msg, tok} }
 
-func (sc *Scanner) TokenError(tok ast.Token, msg string) *Error { return &Error{tok.Pos, msg, tok.Str} }
+func (sc *Scanner) TokenError(
+	tok ast.Token,
+	msg string,
+) *Error {
+	return &Error{tok.Pos, msg, tok.Str}
+}
 
 func (sc *Scanner) readNext() int {
 	ch, err := sc.reader.ReadByte()
@@ -287,7 +294,8 @@ var reservedWords = map[string]int{
 	"end": TEnd, "false": TFalse, "for": TFor, "function": TFunction,
 	"if": TIf, "in": TIn, "local": TLocal, "nil": TNil, "not": TNot, "or": TOr,
 	"return": TReturn, "repeat": TRepeat, "then": TThen, "true": TTrue,
-	"until": TUntil, "while": TWhile, "goto": TGoto}
+	"until": TUntil, "while": TWhile, "goto": TGoto,
+}
 
 func (sc *Scanner) Scan(lexer *Lexer) (ast.Token, error) {
 redo:
@@ -418,7 +426,7 @@ redo:
 				tok.Type = ch
 				tok.Str = string(rune(ch))
 			}
-		case '+', '*', '/', '%', '^', '#', '(', ')', '{', '}', ']', ';', ',':
+		case '+', '*', '/', '|', '%', '^', '#', '(', ')', '{', '}', ']', ';', ',':
 			tok.Type = ch
 			tok.Str = string(rune(ch))
 		default:
@@ -522,7 +530,17 @@ func dump(node interface{}, level int, s string) string {
 			return strings.Repeat(s, level) + "<empty>"
 		case len(indicies) == 1 && isInlineDumpNode(vt.Field(indicies[0])):
 			for _, i := range indicies {
-				buf = append(buf, strings.Repeat(s, level)+"- Node$"+tt.Name()+": "+dump(vt.Field(i).Interface(), 0, s))
+				buf = append(
+					buf,
+					strings.Repeat(
+						s,
+						level,
+					)+"- Node$"+tt.Name()+": "+dump(
+						vt.Field(i).Interface(),
+						0,
+						s,
+					),
+				)
 			}
 		default:
 			buf = append(buf, strings.Repeat(s, level)+"- Node$"+tt.Name())

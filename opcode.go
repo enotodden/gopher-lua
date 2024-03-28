@@ -23,18 +23,22 @@ import (
 
 const opInvalidInstruction = ^uint32(0)
 
-const opSizeCode = 6
-const opSizeA = 8
-const opSizeB = 9
-const opSizeC = 9
-const opSizeBx = 18
-const opSizesBx = 18
+const (
+	opSizeCode = 6
+	opSizeA    = 8
+	opSizeB    = 9
+	opSizeC    = 9
+	opSizeBx   = 18
+	opSizesBx  = 18
+)
 
-const opMaxArgsA = (1 << opSizeA) - 1
-const opMaxArgsB = (1 << opSizeB) - 1
-const opMaxArgsC = (1 << opSizeC) - 1
-const opMaxArgBx = (1 << opSizeBx) - 1
-const opMaxArgSbx = opMaxArgBx >> 1
+const (
+	opMaxArgsA  = (1 << opSizeA) - 1
+	opMaxArgsB  = (1 << opSizeB) - 1
+	opMaxArgsC  = (1 << opSizeC) - 1
+	opMaxArgBx  = (1 << opSizeBx) - 1
+	opMaxArgSbx = opMaxArgBx >> 1
+)
 
 const (
 	OP_MOVE     int = iota /*      A B     R(A) := R(B)                            */
@@ -57,15 +61,16 @@ const (
 
 	OP_SELF /*      A B C   R(A+1) := R(B); R(A) := R(B)[RK(C)]             */
 
-	OP_ADD /*       A B C   R(A) := RK(B) + RK(C)                           */
-	OP_SUB /*       A B C   R(A) := RK(B) - RK(C)                           */
-	OP_MUL /*       A B C   R(A) := RK(B) * RK(C)                           */
-	OP_DIV /*       A B C   R(A) := RK(B) / RK(C)                           */
-	OP_MOD /*       A B C   R(A) := RK(B) % RK(C)                           */
-	OP_POW /*       A B C   R(A) := RK(B) ^ RK(C)                           */
-	OP_UNM /*       A B     R(A) := -R(B)                                   */
-	OP_NOT /*       A B     R(A) := not R(B)                                */
-	OP_LEN /*       A B     R(A) := length of R(B)                          */
+	OP_ADD   /*       A B C   R(A) := RK(B) + RK(C)                           */
+	OP_SUB   /*       A B C   R(A) := RK(B) - RK(C)                           */
+	OP_MUL   /*       A B C   R(A) := RK(B) * RK(C)                           */
+	OP_DIV   /*       A B C   R(A) := RK(B) / RK(C)                           */
+	OP_BITOR /*       A B C   R(A) := RK(B) | RK(C)                           */
+	OP_MOD   /*       A B C   R(A) := RK(B) % RK(C)                           */
+	OP_POW   /*       A B C   R(A) := RK(B) ^ RK(C)                           */
+	OP_UNM   /*       A B     R(A) := -R(B)                                   */
+	OP_NOT   /*       A B     R(A) := not R(B)                                */
+	OP_LEN   /*       A B     R(A) := length of R(B)                          */
 
 	OP_CONCAT /*    A B C   R(A) := R(B).. ... ..R(C)                       */
 
@@ -126,48 +131,49 @@ type opProp struct {
 }
 
 var opProps = []opProp{
-	opProp{"MOVE", false, true, opArgModeR, opArgModeN, opTypeABC},
-	opProp{"MOVEN", false, true, opArgModeR, opArgModeN, opTypeABC},
-	opProp{"LOADK", false, true, opArgModeK, opArgModeN, opTypeABx},
-	opProp{"LOADBOOL", false, true, opArgModeU, opArgModeU, opTypeABC},
-	opProp{"LOADNIL", false, true, opArgModeR, opArgModeN, opTypeABC},
-	opProp{"GETUPVAL", false, true, opArgModeU, opArgModeN, opTypeABC},
-	opProp{"GETGLOBAL", false, true, opArgModeK, opArgModeN, opTypeABx},
-	opProp{"GETTABLE", false, true, opArgModeR, opArgModeK, opTypeABC},
-	opProp{"GETTABLEKS", false, true, opArgModeR, opArgModeK, opTypeABC},
-	opProp{"SETGLOBAL", false, false, opArgModeK, opArgModeN, opTypeABx},
-	opProp{"SETUPVAL", false, false, opArgModeU, opArgModeN, opTypeABC},
-	opProp{"SETTABLE", false, false, opArgModeK, opArgModeK, opTypeABC},
-	opProp{"SETTABLEKS", false, false, opArgModeK, opArgModeK, opTypeABC},
-	opProp{"NEWTABLE", false, true, opArgModeU, opArgModeU, opTypeABC},
-	opProp{"SELF", false, true, opArgModeR, opArgModeK, opTypeABC},
-	opProp{"ADD", false, true, opArgModeK, opArgModeK, opTypeABC},
-	opProp{"SUB", false, true, opArgModeK, opArgModeK, opTypeABC},
-	opProp{"MUL", false, true, opArgModeK, opArgModeK, opTypeABC},
-	opProp{"DIV", false, true, opArgModeK, opArgModeK, opTypeABC},
-	opProp{"MOD", false, true, opArgModeK, opArgModeK, opTypeABC},
-	opProp{"POW", false, true, opArgModeK, opArgModeK, opTypeABC},
-	opProp{"UNM", false, true, opArgModeR, opArgModeN, opTypeABC},
-	opProp{"NOT", false, true, opArgModeR, opArgModeN, opTypeABC},
-	opProp{"LEN", false, true, opArgModeR, opArgModeN, opTypeABC},
-	opProp{"CONCAT", false, true, opArgModeR, opArgModeR, opTypeABC},
-	opProp{"JMP", false, false, opArgModeR, opArgModeN, opTypeASbx},
-	opProp{"EQ", true, false, opArgModeK, opArgModeK, opTypeABC},
-	opProp{"LT", true, false, opArgModeK, opArgModeK, opTypeABC},
-	opProp{"LE", true, false, opArgModeK, opArgModeK, opTypeABC},
-	opProp{"TEST", true, true, opArgModeR, opArgModeU, opTypeABC},
-	opProp{"TESTSET", true, true, opArgModeR, opArgModeU, opTypeABC},
-	opProp{"CALL", false, true, opArgModeU, opArgModeU, opTypeABC},
-	opProp{"TAILCALL", false, true, opArgModeU, opArgModeU, opTypeABC},
-	opProp{"RETURN", false, false, opArgModeU, opArgModeN, opTypeABC},
-	opProp{"FORLOOP", false, true, opArgModeR, opArgModeN, opTypeASbx},
-	opProp{"FORPREP", false, true, opArgModeR, opArgModeN, opTypeASbx},
-	opProp{"TFORLOOP", true, false, opArgModeN, opArgModeU, opTypeABC},
-	opProp{"SETLIST", false, false, opArgModeU, opArgModeU, opTypeABC},
-	opProp{"CLOSE", false, false, opArgModeN, opArgModeN, opTypeABC},
-	opProp{"CLOSURE", false, true, opArgModeU, opArgModeN, opTypeABx},
-	opProp{"VARARG", false, true, opArgModeU, opArgModeN, opTypeABC},
-	opProp{"NOP", false, false, opArgModeR, opArgModeN, opTypeASbx},
+	{"MOVE", false, true, opArgModeR, opArgModeN, opTypeABC},
+	{"MOVEN", false, true, opArgModeR, opArgModeN, opTypeABC},
+	{"LOADK", false, true, opArgModeK, opArgModeN, opTypeABx},
+	{"LOADBOOL", false, true, opArgModeU, opArgModeU, opTypeABC},
+	{"LOADNIL", false, true, opArgModeR, opArgModeN, opTypeABC},
+	{"GETUPVAL", false, true, opArgModeU, opArgModeN, opTypeABC},
+	{"GETGLOBAL", false, true, opArgModeK, opArgModeN, opTypeABx},
+	{"GETTABLE", false, true, opArgModeR, opArgModeK, opTypeABC},
+	{"GETTABLEKS", false, true, opArgModeR, opArgModeK, opTypeABC},
+	{"SETGLOBAL", false, false, opArgModeK, opArgModeN, opTypeABx},
+	{"SETUPVAL", false, false, opArgModeU, opArgModeN, opTypeABC},
+	{"SETTABLE", false, false, opArgModeK, opArgModeK, opTypeABC},
+	{"SETTABLEKS", false, false, opArgModeK, opArgModeK, opTypeABC},
+	{"NEWTABLE", false, true, opArgModeU, opArgModeU, opTypeABC},
+	{"SELF", false, true, opArgModeR, opArgModeK, opTypeABC},
+	{"ADD", false, true, opArgModeK, opArgModeK, opTypeABC},
+	{"SUB", false, true, opArgModeK, opArgModeK, opTypeABC},
+	{"MUL", false, true, opArgModeK, opArgModeK, opTypeABC},
+	{"DIV", false, true, opArgModeK, opArgModeK, opTypeABC},
+	{"BITOR", false, true, opArgModeK, opArgModeK, opTypeABC},
+	{"MOD", false, true, opArgModeK, opArgModeK, opTypeABC},
+	{"POW", false, true, opArgModeK, opArgModeK, opTypeABC},
+	{"UNM", false, true, opArgModeR, opArgModeN, opTypeABC},
+	{"NOT", false, true, opArgModeR, opArgModeN, opTypeABC},
+	{"LEN", false, true, opArgModeR, opArgModeN, opTypeABC},
+	{"CONCAT", false, true, opArgModeR, opArgModeR, opTypeABC},
+	{"JMP", false, false, opArgModeR, opArgModeN, opTypeASbx},
+	{"EQ", true, false, opArgModeK, opArgModeK, opTypeABC},
+	{"LT", true, false, opArgModeK, opArgModeK, opTypeABC},
+	{"LE", true, false, opArgModeK, opArgModeK, opTypeABC},
+	{"TEST", true, true, opArgModeR, opArgModeU, opTypeABC},
+	{"TESTSET", true, true, opArgModeR, opArgModeU, opTypeABC},
+	{"CALL", false, true, opArgModeU, opArgModeU, opTypeABC},
+	{"TAILCALL", false, true, opArgModeU, opArgModeU, opTypeABC},
+	{"RETURN", false, false, opArgModeU, opArgModeN, opTypeABC},
+	{"FORLOOP", false, true, opArgModeR, opArgModeN, opTypeASbx},
+	{"FORPREP", false, true, opArgModeR, opArgModeN, opTypeASbx},
+	{"TFORLOOP", true, false, opArgModeN, opArgModeU, opTypeABC},
+	{"SETLIST", false, false, opArgModeU, opArgModeU, opTypeABC},
+	{"CLOSE", false, false, opArgModeN, opArgModeN, opTypeABC},
+	{"CLOSURE", false, true, opArgModeU, opArgModeN, opTypeABx},
+	{"VARARG", false, true, opArgModeU, opArgModeN, opTypeABC},
+	{"NOP", false, false, opArgModeR, opArgModeN, opTypeASbx},
 }
 
 func opGetOpCode(inst uint32) int {
@@ -243,8 +249,10 @@ func opCreateASbx(op int, a int, sbx int) uint32 {
 	return inst
 }
 
-const opBitRk = 1 << (opSizeB - 1)
-const opMaxIndexRk = opBitRk - 1
+const (
+	opBitRk      = 1 << (opSizeB - 1)
+	opMaxIndexRk = opBitRk - 1
+)
 
 func opIsK(value int) bool {
 	return bool((value & opBitRk) != 0)
@@ -299,7 +307,13 @@ func opToString(inst uint32) string {
 	case OP_GETTABLE:
 		buf += fmt.Sprintf("; R(%v) := R(%v)[RK(%v)]", arga, argb, argc)
 	case OP_GETTABLEKS:
-		buf += fmt.Sprintf("; R(%v) := R(%v)[RK(%v)] ; RK(%v) is constant string", arga, argb, argc, argc)
+		buf += fmt.Sprintf(
+			"; R(%v) := R(%v)[RK(%v)] ; RK(%v) is constant string",
+			arga,
+			argb,
+			argc,
+			argc,
+		)
 	case OP_SETGLOBAL:
 		buf += fmt.Sprintf("; Gbl[Kst(%v)] := R(%v)", argbx, arga)
 	case OP_SETUPVAL:
@@ -307,11 +321,24 @@ func opToString(inst uint32) string {
 	case OP_SETTABLE:
 		buf += fmt.Sprintf("; R(%v)[RK(%v)] := RK(%v)", arga, argb, argc)
 	case OP_SETTABLEKS:
-		buf += fmt.Sprintf("; R(%v)[RK(%v)] := RK(%v) ; RK(%v) is constant string", arga, argb, argc, argb)
+		buf += fmt.Sprintf(
+			"; R(%v)[RK(%v)] := RK(%v) ; RK(%v) is constant string",
+			arga,
+			argb,
+			argc,
+			argb,
+		)
 	case OP_NEWTABLE:
 		buf += fmt.Sprintf("; R(%v) := {} (size = BC)", arga)
 	case OP_SELF:
-		buf += fmt.Sprintf("; R(%v+1) := R(%v); R(%v) := R(%v)[RK(%v)]", arga, argb, arga, argb, argc)
+		buf += fmt.Sprintf(
+			"; R(%v+1) := R(%v); R(%v) := R(%v)[RK(%v)]",
+			arga,
+			argb,
+			arga,
+			argb,
+			argc,
+		)
 	case OP_ADD:
 		buf += fmt.Sprintf("; R(%v) := RK(%v) + RK(%v)", arga, argb, argc)
 	case OP_SUB:
@@ -320,6 +347,8 @@ func opToString(inst uint32) string {
 		buf += fmt.Sprintf("; R(%v) := RK(%v) * RK(%v)", arga, argb, argc)
 	case OP_DIV:
 		buf += fmt.Sprintf("; R(%v) := RK(%v) / RK(%v)", arga, argb, argc)
+	case OP_BITOR:
+		buf += fmt.Sprintf("; R(%v) := RK(%v) | RK(%v)", arga, argb, argc)
 	case OP_MOD:
 		buf += fmt.Sprintf("; R(%v) := RK(%v) %% RK(%v)", arga, argb, argc)
 	case OP_POW:
@@ -343,25 +372,66 @@ func opToString(inst uint32) string {
 	case OP_TEST:
 		buf += fmt.Sprintf("; if not (R(%v) <=> %v) then pc++", arga, argc)
 	case OP_TESTSET:
-		buf += fmt.Sprintf("; if (R(%v) <=> %v) then R(%v) := R(%v) else pc++", argb, argc, arga, argb)
+		buf += fmt.Sprintf(
+			"; if (R(%v) <=> %v) then R(%v) := R(%v) else pc++",
+			argb,
+			argc,
+			arga,
+			argb,
+		)
 	case OP_CALL:
-		buf += fmt.Sprintf("; R(%v) ... R(%v+%v-2) := R(%v)(R(%v+1) ... R(%v+%v-1))", arga, arga, argc, arga, arga, arga, argb)
+		buf += fmt.Sprintf(
+			"; R(%v) ... R(%v+%v-2) := R(%v)(R(%v+1) ... R(%v+%v-1))",
+			arga,
+			arga,
+			argc,
+			arga,
+			arga,
+			arga,
+			argb,
+		)
 	case OP_TAILCALL:
 		buf += fmt.Sprintf("; return R(%v)(R(%v+1) ... R(%v+%v-1))", arga, arga, arga, argb)
 	case OP_RETURN:
 		buf += fmt.Sprintf("; return R(%v) ... R(%v+%v-2)", arga, arga, argb)
 	case OP_FORLOOP:
-		buf += fmt.Sprintf("; R(%v)+=R(%v+2); if R(%v) <?= R(%v+1) then { pc+=%v; R(%v+3)=R(%v) }", arga, arga, arga, arga, argsbx, arga, arga)
+		buf += fmt.Sprintf(
+			"; R(%v)+=R(%v+2); if R(%v) <?= R(%v+1) then { pc+=%v; R(%v+3)=R(%v) }",
+			arga,
+			arga,
+			arga,
+			arga,
+			argsbx,
+			arga,
+			arga,
+		)
 	case OP_FORPREP:
 		buf += fmt.Sprintf("; R(%v)-=R(%v+2); pc+=%v", arga, arga, argsbx)
 	case OP_TFORLOOP:
-		buf += fmt.Sprintf("; R(%v+3) ... R(%v+3+%v) := R(%v)(R(%v+1) R(%v+2)); if R(%v+3) ~= nil then { pc++; R(%v+2)=R(%v+3); }", arga, arga, argc, arga, arga, arga, arga, arga, arga)
+		buf += fmt.Sprintf(
+			"; R(%v+3) ... R(%v+3+%v) := R(%v)(R(%v+1) R(%v+2)); if R(%v+3) ~= nil then { pc++; R(%v+2)=R(%v+3); }",
+			arga,
+			arga,
+			argc,
+			arga,
+			arga,
+			arga,
+			arga,
+			arga,
+			arga,
+		)
 	case OP_SETLIST:
 		buf += fmt.Sprintf("; R(%v)[(%v-1)*FPF+i] := R(%v+i) 1 <= i <= %v", arga, argc, arga, argb)
 	case OP_CLOSE:
 		buf += fmt.Sprintf("; close all variables in the stack up to (>=) R(%v)", arga)
 	case OP_CLOSURE:
-		buf += fmt.Sprintf("; R(%v) := closure(KPROTO[%v] R(%v) ... R(%v+n))", arga, argbx, arga, arga)
+		buf += fmt.Sprintf(
+			"; R(%v) := closure(KPROTO[%v] R(%v) ... R(%v+n))",
+			arga,
+			argbx,
+			arga,
+			arga,
+		)
 	case OP_VARARG:
 		buf += fmt.Sprintf(";  R(%v) R(%v+1) ... R(%v+%v-1) = vararg", arga, arga, arga, argb)
 	case OP_NOP:
